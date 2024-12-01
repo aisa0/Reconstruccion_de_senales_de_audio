@@ -2,7 +2,6 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-# from calculo_promedios import calcular_promedios
 
 # Configuración de estilo para los gráficos
 sns.set(style="whitegrid", context="talk", palette="bright")
@@ -10,7 +9,7 @@ sns.set(style="whitegrid", context="talk", palette="bright")
 # Listado de métricas a graficar
 metricas = {
     'WER (%)': 'WER',
-    'Confiabilidad (Deepgram)': 'Confiabilidad'
+    #'Confiabilidad (Deepgram)': 'Confiabilidad'
 }
 
 # Lista de archivos con sus etiquetas correspondientes
@@ -34,21 +33,33 @@ def graficar_comparacion_por_hablante(datos_combinados, metric, nombre_metric, d
     for hablante in datos_combinados['Hablante'].unique():
         datos_hablante = datos_combinados[datos_combinados['Hablante'] == hablante]
 
-        plt.figure(figsize=(12, 8))
-        sns.lineplot(
-            data=datos_hablante, x='Distancia (m)', y=metric, hue='Modo Denoiser', 
-            style='Tipo Micrófono', markers=True, dashes=False, errorbar=None
-        )
+        # Crear una figura con dos subgráficas (ax1 y ax2)
+        fig, axs = plt.subplots(2, 1, layout='constrained', figsize=(12, 12))
 
-        # Títulos y etiquetas
-        plt.title(f"Comparación de {nombre_metric} para el hablante {hablante}")
-        plt.xlabel("Distancia (m)")
-        plt.ylabel(metric)
-        plt.legend(title="Modo Denoiser / Tipo Micrófono")
-        plt.grid(True)
+        # WER en la parte superior (primer subgráfico)
+        sns.lineplot(
+            data=datos_hablante, x='Distancia (m)', y='WER (%)', hue='Modo Denoiser',
+            style='Tipo Micrófono', markers=True, dashes=False, errorbar=None, ax=axs[0]
+        )
+        axs[0].set_title(f"Comparación de WER para el hablante {hablante}")
+        axs[0].set_xlabel("Distancia (m)")
+        axs[0].set_ylabel('WER (%)')
+        axs[0].legend(title="Modo Denoiser / Tipo Micrófono")
+        axs[0].grid(True)
+
+        # Confiabilidad en la parte inferior (segundo subgráfico)
+        sns.lineplot(
+            data=datos_hablante, x='Distancia (m)', y='Confiabilidad (Deepgram)', hue='Modo Denoiser',
+            style='Tipo Micrófono', markers=True, dashes=False, errorbar=None, ax=axs[1]
+        )
+        axs[1].set_title(f"Comparación de Confiabilidad para el hablante {hablante}")
+        axs[1].set_xlabel("Distancia (m)")
+        axs[1].set_ylabel('Confiabilidad')
+        axs[1].legend(title="Modo Denoiser / Tipo Micrófono")
+        axs[1].grid(True)
 
         # Guardar la gráfica en PDF y PNG
-        nombre_archivo = f"comparacion_{hablante}_{metric.replace(' ', '_')}"
+        nombre_archivo = f"comparacion_{hablante}_"
         plt.savefig(f"{directorio_pdf}/{nombre_archivo}.pdf", format="pdf")
         plt.savefig(f"{directorio_png}/{nombre_archivo}.png", format="png")
 
@@ -60,6 +71,7 @@ def generar_graficas():
 
     # Cargar todos los datos
     datos_combinados = cargar_datos_combinados()
+
     datos_combinados['Tipo Micrófono'] = datos_combinados['Posición de Grabación'].apply(lambda x: 'Omnidireccional' if x == 7 else 'Cardiode')
 
     # Directorios para los gráficos
@@ -74,24 +86,25 @@ def generar_graficas():
 
     print("Gráficas generadas.")
 
+
 # Función para calcular y guardar los promedios en un archivo de texto
 def calcular_promedios(archivo_csv, archivo_salida):
     try:
         # Cargar los datos del archivo CSV
         datos = pd.read_csv(archivo_csv)
-        
+
         # Lista de columnas numéricas requeridas
         columnas_requeridas = ['Speed Rate (wpm)', 'WER (%)', 'Confiabilidad (Deepgram)',
                                'Frecuencia Fundamental Promedio (Hz)', 'Varianza f0 (Hz^2)']
-        
+
         # Determinar qué columnas están disponibles
         columnas_disponibles = [col for col in columnas_requeridas if col in datos.columns]
         columnas_faltantes = set(columnas_requeridas) - set(columnas_disponibles)
-        
+
         if not columnas_disponibles:
             print(f"El archivo {archivo_csv} no contiene ninguna de las columnas requeridas. Se omite.")
             return
-        
+
         if columnas_faltantes:
             print(f"Advertencia: El archivo {archivo_csv} no tiene las columnas {', '.join(columnas_faltantes)}.")
 
@@ -104,20 +117,21 @@ def calcular_promedios(archivo_csv, archivo_salida):
                 else:
                     datos_filtrados = datos[datos['Posición de Grabación'] != 7]
                     descripcion_posicion = "Posición de Grabación != 7"
-                
+
                 f.write(f"{descripcion_posicion} (Micrófono {microfono}):\n")
-                
+
                 for hablante in datos_filtrados['Hablante'].unique():
                     datos_hablante = datos_filtrados[datos_filtrados['Hablante'] == hablante]
                     promedios = datos_hablante[columnas_disponibles].mean()
-                    
+
                     f.write(f"  Hablante: {hablante}\n")
                     for columna, promedio in promedios.items():
                         f.write(f"    {columna}: {promedio:.2f}\n")
                     f.write("\n")
-                    
+
     except Exception as e:
         print(f"Error procesando {archivo_csv}: {e}")
+
 
 # Función para calcular los promedios
 def calcula_promedios():
@@ -135,7 +149,8 @@ def main():
     try:
         generar_graficas()
         calcula_promedios()
-        
+
+
     except Exception as e:
         print(f"Ocurrió un error: {e}")
 
