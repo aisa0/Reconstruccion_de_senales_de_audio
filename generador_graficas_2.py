@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -87,7 +88,21 @@ def graficar_todo_en_una(metricas_sin_denoiser):
 
     # Ajustar diseño
     plt.tight_layout()
+
+    # Directorios para los gráficos
+    directorio_pdf = "/content/Resultados_Graficas/Frecuencia_y_Velocidad/PDFs"
+    directorio_png = "/content/Resultados_Graficas/Frecuencia_y_Velocidad/PNGs"
+    os.makedirs(directorio_pdf, exist_ok=True)
+    os.makedirs(directorio_png, exist_ok=True)
+
+    # Guardar la gráfica en PDF y PNG
+    nombre_archivo = f"f0_y_sr"
+    plt.savefig(f"{directorio_pdf}/{nombre_archivo}.pdf", format="pdf")
+    plt.savefig(f"{directorio_png}/{nombre_archivo}.png", format="png")
+
     plt.show()
+
+    
 
 # Llamada a la función para generar las gráficas
 graficar_todo_en_una(metricas_sin_denoiser)
